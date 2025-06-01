@@ -1,9 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-
   "build": {
     "builder": "NIXPACKS",
-    "watchPaths": ["Backend/best_model.pth"],
     "nixpacksConfig": {
       "phases": {
         "install": {
@@ -15,8 +13,11 @@
       }
     }
   },
-
   "deploy": {
     "startCommand": "uvicorn Backend.main:app --host 0.0.0.0 --port $PORT"
+  },
+  "env": {
+    "MODEL_PATH": "./Backend/best_model.pth",
+    "BREED_DESCRIPTIONS_URL": "https://docs.google.com/spreadsheets/d/1v9o-KPbQUnaWb9qK2hZfAHgOLrve4BKx1k30RUIYM3M/export?format=csv"
   }
 }
