@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # --- Configuration and Initialization ---
-MODEL_PATH = "./best_model.pth"
+MODEL_PATH = "./Backend/best_model.pth"
 BREED_DESCRIPTIONS_URL = "https://docs.google.com/spreadsheets/d/1v9o-KPbQUnaWb9qK2hZfAHgOLrve4BKx1k30RUIYM3M/export?format=csv"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
