@@ -9,7 +9,7 @@
         "install": {
           "cmds": [
             "pip install --upgrade pip",
-            "pip install -r Backend/requirement.txt"
+            "pip install -r requirement.txt"
           ]
         }
       }
