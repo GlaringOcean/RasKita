@@ -1,7 +1,0 @@
-fastapi==0.110.0
-uvicorn
-torch
-torchvision
-pillow
-pandas
-requests
