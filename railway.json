@@ -1,0 +1,16 @@
+{
+  "build": {
+    "builder": "python",
+    "buildCommand": "pip install -r requirements.txt"
+  },
+  "start": {
+    "startCommand": "uvicorn main:app --host 0.0.0.0 --port 8000"
+  },
+  "env": {
+    "MODEL_PATH": "./Backend/best_model.pth",
+    "BREED_DESCRIPTIONS_URL": "https://docs.google.com/spreadsheets/d/1v9o-KPbQUnaWb9qK2hZfAHgOLrve4BKx1k30RUIYM3M/export?format=csv"
+  },
+  "watch": [
+    "Backend/best_model.pth"
+  ]
+}
