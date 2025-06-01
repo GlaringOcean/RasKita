@@ -4,6 +4,9 @@
     "builder": "NIXPACKS",
     "nixpacksConfig": {
       "phases": {
+        "setup": {
+          "nixPkgs": ["python311", "git", "curl"]
+        },
         "install": {
           "cmds": [
             "pip install --upgrade pip",
