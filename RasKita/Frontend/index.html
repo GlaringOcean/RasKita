@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RasKita - AI-Powered Detection</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spin"></div>
+            <p>Analyzing your pet...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-paw"></i>
+                <span>RasKita</span>
+            </div>
+            <nav class="nav">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#features" class="nav-link">Features</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        Discover Your Pet's Breed
+                        <span class="gradient-text">Instantly</span>
+                    </h1>
+                    <p class="hero-description">
+                        Upload a photo of your cat or dog and let our AI-powered system identify the breed
+                        with personalized care recommendations.
+                    </p>
+                    
+                    <!-- Upload Section -->
+                    <div class="upload-section">
+                        <div class="upload-options">
+                            <button class="option-btn" id="uploadBtn">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                Upload Photo
+                            </button>
+                            <button class="option-btn" id="cameraBtn">
+                                <i class="fas fa-camera"></i>
+                                Take Photo
+                            </button>
+                        </div>
+
+                        <div class="error-message" id="errorMessage"></div>
+
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <h3>Drop your image here</h3>
+                                <p>or click to browse</p>
+                                <input type="file" id="fileInput" accept="image/*" hidden>
+                            </div>
+                            <div class="image-preview" id="imagePreview">
+                                <img id="previewImg" alt="Preview">
+                                <button class="remove-image" id="removeImage">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Camera Section -->
+                        <div class="camera-section" id="cameraSection">
+                            <video id="video" autoplay playsinline></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                            <div class="camera-controls">
+                                <button class="camera-control-btn" id="captureBtn">
+                                    <i class="fas fa-camera"></i>
+                                    Capture
+                                </button>
+                                <button class="camera-control-btn secondary" id="switchCameraBtn">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Switch
+                                </button>
+                                <button class="camera-control-btn secondary" id="closeCameraBtn">
+                                    <i class="fas fa-times"></i>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button class="predict-btn" id="predictBtn" disabled>
+                            <i class="fas fa-search"></i>
+                            Analyze Breed
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="resultsSection">
+            <div class="container">
+                <h2 class="section-title">Analysis Results</h2>
+                <div class="confidence-message" id="confidenceMessage"></div>
+                <div class="results-grid" id="resultsGrid">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="container">
+                <h2 class="section-title">Why Choose PetBreed AI?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>Instant Recognition</h3>
+                        <p>Get accurate breed identification in seconds with our advanced CNN technology.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <h3>Camera Integration</h3>
+                        <p>Take photos directly with your device camera for instant breed analysis.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h3>Care Recommendations</h3>
+                        <p>Receive personalized care tips based on your pet's specific breed characteristics.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3>Educational Value</h3>
+                        <p>Learn about breed traits, health considerations, and optimal care practices.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Mobile Friendly</h3>
+                        <p>Works perfectly on all devices - desktop, tablet, and mobile phones.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h3>Detailed Information</h3>
+                        <p>Get comprehensive breed information including size, weight, and care requirements.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about">
+            <div class="container">
+                <div class="about-content">
+                    <h2 class="section-title">About Our Technology</h2>
+                    <p class="about-text">
+                        Our system uses state-of-the-art Convolutional Neural Networks (CNN) to analyze 
+                        and classify over 55 different breeds of cats and dogs. With high accuracy and 
+                        speed, we provide not just breed identification but also comprehensive care 
+                        recommendations tailored to each breed's unique needs.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 RasKita. Powered by Deep Learning Technology.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
