@@ -6,6 +6,9 @@ class PetBreedClassifier {
             'http://localhost:8000',
             'http://127.0.0.1:8000',
             'http://192.168.1.100:8000',
+            'http://localhost:7860',
+            'http://127.0.0.1:7860',
+            'http://192.168.1.100:7860'
         ];
         
         // State
@@ -478,8 +481,8 @@ class PetBreedClassifier {
         return `${min} - ${max}`;
     }
     
-    // NEW: Helper method to format gender-specific ranges
-    formatGenderRange(data) {
+    // UPDATED: Helper method to format gender-specific ranges with correct units
+    formatGenderRange(data, fieldKey) {
         if (!data || (!data.male && !data.female)) {
             return 'Information not available';
         }
@@ -487,21 +490,29 @@ class PetBreedClassifier {
         const maleRange = data.male || 'Information not available';
         const femaleRange = data.female || 'Information not available';
         
+        // Determine unit based on field type
+        let unit = '';
+        if (fieldKey === 'height') {
+            unit = ' Inches';
+        } else if (fieldKey === 'weight') {
+            unit = ' Pounds';
+        }
+        
         return `
             <div class="gender-range">
                 <div class="gender-item">
                     <span class="gender-label">Male:</span>
-                    <span class="gender-value">${maleRange}</span>
+                    <span class="gender-value">${maleRange}${unit}</span>
                 </div>
                 <div class="gender-item">
                     <span class="gender-label">Female:</span>
-                    <span class="gender-value">${femaleRange}</span>
+                    <span class="gender-value">${femaleRange}${unit}</span>
                 </div>
             </div>
         `;
     }
     
-    // UPDATED: Display results with new SQL format
+    // UPDATED: Display results with new SQL format and correct units
     displayResults(data) {
         this.resultsSection.classList.add('active');
         
@@ -530,9 +541,14 @@ class PetBreedClassifier {
                 let displayValue = 'Information not available';
                 
                 if (field.type === 'gender_range' && value) {
-                    displayValue = this.formatGenderRange(value);
+                    displayValue = this.formatGenderRange(value, field.key);
                 } else if (field.type === 'range' && value) {
-                    displayValue = value;
+                    // Add "years" unit for life expectancy
+                    if (field.key === 'lifespan') {
+                        displayValue = `${value} years`;
+                    } else {
+                        displayValue = value;
+                    }
                 } else if (field.type === 'text' && value) {
                     displayValue = value;
                 }
