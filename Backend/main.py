@@ -41,7 +41,7 @@ async def options_predict():
 
 # --- Configuration and Initialization ---
 MODEL_PATH = "./best_model.pth"
-DATABASE_PATH = "./Backend/petdatabase.sql"  # Path to your SQL database file
+DATABASE_PATH = "./petdatabase.db"  # Updated path to SQLite database file
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"Using device: {device}")
@@ -51,15 +51,15 @@ NUM_CLASSES = 55
 model = None
 class_names = [
     'Abyssinian', 'Alaskan Malamute', 'American Bobtail', 'American Shorhair', 'American bulldog',
-    'American Pit Bull Terrier', 'Basset_hound', 'Beagle', 'Bengal', 'Birman', 'Bombay', 'Boxer',
+    'American Pit Bull Terrier', 'Basset Hound', 'Beagle', 'Bengal', 'Birman', 'Bombay', 'Boxer',
     'British Shorthair', 'Bulldog', 'Calico', 'Chihuahua', 'Dachshund', 'Egyptian Mau',
-    'English Cockerc Paniel', 'English Setter', 'German Shepherd', 'German Shorthairaired',
+    'English Cocker Spaniel', 'English Setter', 'German Shepherd', 'German Shorthaired Pointer',
     'Golden Retreiver', 'Great Pyrenees', 'Havanese', 'Husky', 'Japanese Chin', 'Keeshond',
     'Labrador Retriever', 'Leonberger', 'Maine Coon', 'Miniature Pinscher', 'Munchkin',
-    'Newfoundland', 'Norwegian Forest Cat', 'Ocicat', 'Persian', 'Pomeranian', 'Poodle', 'Pug',
+    'Newfoundland', 'Norwegian Forest', 'Ocicat', 'Persian', 'Pomeranian', 'Poodle', 'Pug',
     'Ragdoll', 'Rottweiler', 'Russian Blue', 'Saint Bernard', 'Samoyed', 'Scottish Fold',
     'Scottish Terrier', 'Shiba Inu', 'Siamese', 'Sphynx', 'Staffordshire Bull Terrier',
-    'Tortoiseshell', 'Tuxedo', 'Wheaten Tersier', 'Yorkshire Terrier'
+    'Tortoiseshell', 'Tuxedo', 'Wheaten Terrier', 'Yorkshire Terrier'
 ]
 
 breed_descriptions_df = pd.DataFrame()
@@ -101,48 +101,41 @@ def load_breed_descriptions():
     global breed_descriptions_df
     try:
         logger.info(f"Loading breed descriptions from database: {DATABASE_PATH}")
-        
-        # Check if database file exists
+
         if not os.path.exists(DATABASE_PATH):
             logger.error(f"Database file not found at {DATABASE_PATH}")
             breed_descriptions_df = pd.DataFrame()
             return
-        
-        # Connect to SQLite database
+
         conn = sqlite3.connect(DATABASE_PATH)
-        
-        # Try to read from the most common table names for breed descriptions
-        # You might need to adjust the table name and query based on your actual database structure
-        possible_queries = [
-            "SELECT * FROM breed_descriptions",
-            "SELECT * FROM breeds",
-            "SELECT * FROM pet_breeds",
-            "SELECT * FROM breed_info",
-            "SELECT name FROM sqlite_master WHERE type='table'"  # Get all table names
-        ]
-        
-        for query in possible_queries:
-            try:
-                if "sqlite_master" in query:
-                    # Get table names first
-                    tables = pd.read_sql_query(query, conn)
-                    logger.info(f"Available tables: {tables['name'].tolist()}")
-                    continue
-                
-                breed_descriptions_df = pd.read_sql_query(query, conn)
-                logger.info(f"Successfully loaded breed descriptions from table using query: {query}")
-                logger.info(f"Loaded {len(breed_descriptions_df)} records with columns: {breed_descriptions_df.columns.tolist()}")
-                break
-                
-            except Exception as e:
-                logger.warning(f"Query failed: {query}. Error: {e}")
-                continue
-        
+
+        # Load catbreeds and dogbreeds tables and combine
+        catbreeds_df = pd.DataFrame()
+        dogbreeds_df = pd.DataFrame()
+
+        try:
+            catbreeds_df = pd.read_sql_query("SELECT * FROM catbreeds", conn)
+            logger.info(f"Loaded {len(catbreeds_df)} records from catbreeds")
+        except Exception as e:
+            logger.warning(f"Failed to load catbreeds table: {e}")
+
+        try:
+            dogbreeds_df = pd.read_sql_query("SELECT * FROM dogbreeds", conn)
+            logger.info(f"Loaded {len(dogbreeds_df)} records from dogbreeds")
+        except Exception as e:
+            logger.warning(f"Failed to load dogbreeds table: {e}")
+
+        # Combine dataframes vertically, adding a column to identify type
+        catbreeds_df['type'] = 'cat'
+        dogbreeds_df['type'] = 'dog'
+
+        breed_descriptions_df = pd.concat([catbreeds_df, dogbreeds_df], ignore_index=True, sort=False)
+
         conn.close()
-        
+
         if breed_descriptions_df.empty:
             logger.warning("No breed descriptions loaded from database")
-        
+
     except Exception as e:
         logger.error(f"Error loading breed descriptions from database: {e}")
         breed_descriptions_df = pd.DataFrame()
@@ -154,53 +147,21 @@ async def startup_event():
     load_breed_descriptions()
     logger.info("Startup complete!")
 
-def get_breed_description(breed_name: str) -> str:
+def get_breed_description(breed_name: str) -> dict:
     if breed_descriptions_df.empty:
-        return "Description not available."
-    
-    # Try to find the breed in different possible column names
-    possible_breed_columns = ['breed', 'name', 'breed_name', 'Breed', 'Name']
-    possible_description_columns = ['description', 'info', 'details', 'Description', 'Info']
-    
-    breed_col = None
-    desc_cols = []
-    
-    # Find the breed column
-    for col in possible_breed_columns:
-        if col in breed_descriptions_df.columns:
-            breed_col = col
-            break
-    
-    # Find description columns
-    for col in breed_descriptions_df.columns:
-        if col != breed_col and any(desc_name.lower() in col.lower() for desc_name in possible_description_columns):
-            desc_cols.append(col)
-    
-    # If no specific description columns found, use all columns except the breed column
-    if not desc_cols and breed_col:
-        desc_cols = [col for col in breed_descriptions_df.columns if col != breed_col]
-    
-    if not breed_col:
-        # Fallback to first column as breed column
-        breed_col = breed_descriptions_df.columns[0]
-        desc_cols = breed_descriptions_df.columns[1:].tolist()
-    
-    # Search for the breed (case-insensitive)
+        return {}
+
+    breed_col = 'breed_name'
+
     row = breed_descriptions_df[
         breed_descriptions_df[breed_col].astype(str).str.strip().str.lower() == breed_name.strip().lower()
     ]
-    
-    if not row.empty and desc_cols:
-        # Combine description from multiple columns
-        descriptions = []
-        for col in desc_cols[:5]:  # Limit to first 5 description columns
-            desc_value = str(row.iloc[0][col]).strip()
-            if desc_value and desc_value.lower() not in ['nan', 'none', '']:
-                descriptions.append(desc_value)
-        
-        return '\n'.join(descriptions) if descriptions else "Description not available."
-    
-    return "Description not available."
+
+    if not row.empty:
+        # Return the entire row as a dictionary (first match)
+        return row.iloc[0].to_dict()
+
+    return {}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -245,11 +206,26 @@ async def predict(file: UploadFile = File(...)):
         results = []
         for prob, idx in zip(top3_prob, top3_idx):
             breed = class_names[int(idx.item())]
-            description = get_breed_description(breed)
+            breed_info = get_breed_description(breed)
             results.append({
                 "breed": breed,
                 "confidence": f"{prob.item()*100:.2f}%",
-                "description": description
+                "breed_name": breed_info.get('breed_name', breed),
+                "height_male_min": breed_info.get('height_male_min'),
+                "height_male_max": breed_info.get('height_male_max'),
+                "height_female_min": breed_info.get('height_female_min'),
+                "height_female_max": breed_info.get('height_female_max'),
+                "weight_male_min": breed_info.get('weight_male_min'),
+                "weight_male_max": breed_info.get('weight_male_max'),
+                "weight_female_min": breed_info.get('weight_female_min'),
+                "weight_female_max": breed_info.get('weight_female_max'),
+                "life_expectancy_min": breed_info.get('life_expectancy_min'),
+                "life_expectancy_max": breed_info.get('life_expectancy_max'),
+                "characteristics": breed_info.get('characteristics'),
+                "exercise_needs": breed_info.get('exercise_needs'),
+                "grooming_requirements": breed_info.get('grooming_requirements'),
+                "health_considerations": breed_info.get('health_considerations'),
+                "diet_nutrition": breed_info.get('diet_nutrition')
             })
 
         confidence_message = None
