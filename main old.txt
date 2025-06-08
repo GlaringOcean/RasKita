@@ -7,8 +7,8 @@ import torch.nn as nn
 from PIL import Image
 import io
 import pandas as pd
-import sqlite3
 import os
+import requests
 from typing import cast
 import logging
 
@@ -41,7 +41,7 @@ async def options_predict():
 
 # --- Configuration and Initialization ---
 MODEL_PATH = "./best_model.pth"
-DATABASE_PATH = "./Backend/petdatabase.sql"  # Path to your SQL database file
+BREED_DESCRIPTIONS_URL = "https://docs.google.com/spreadsheets/d/1v9o-KPbQUnaWb9qK2hZfAHgOLrve4BKx1k30RUIYM3M/export?format=csv"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"Using device: {device}")
@@ -100,51 +100,15 @@ def load_model():
 def load_breed_descriptions():
     global breed_descriptions_df
     try:
-        logger.info(f"Loading breed descriptions from database: {DATABASE_PATH}")
-        
-        # Check if database file exists
-        if not os.path.exists(DATABASE_PATH):
-            logger.error(f"Database file not found at {DATABASE_PATH}")
-            breed_descriptions_df = pd.DataFrame()
-            return
-        
-        # Connect to SQLite database
-        conn = sqlite3.connect(DATABASE_PATH)
-        
-        # Try to read from the most common table names for breed descriptions
-        # You might need to adjust the table name and query based on your actual database structure
-        possible_queries = [
-            "SELECT * FROM breed_descriptions",
-            "SELECT * FROM breeds",
-            "SELECT * FROM pet_breeds",
-            "SELECT * FROM breed_info",
-            "SELECT name FROM sqlite_master WHERE type='table'"  # Get all table names
-        ]
-        
-        for query in possible_queries:
-            try:
-                if "sqlite_master" in query:
-                    # Get table names first
-                    tables = pd.read_sql_query(query, conn)
-                    logger.info(f"Available tables: {tables['name'].tolist()}")
-                    continue
-                
-                breed_descriptions_df = pd.read_sql_query(query, conn)
-                logger.info(f"Successfully loaded breed descriptions from table using query: {query}")
-                logger.info(f"Loaded {len(breed_descriptions_df)} records with columns: {breed_descriptions_df.columns.tolist()}")
-                break
-                
-            except Exception as e:
-                logger.warning(f"Query failed: {query}. Error: {e}")
-                continue
-        
-        conn.close()
-        
-        if breed_descriptions_df.empty:
-            logger.warning("No breed descriptions loaded from database")
-        
+        logger.info("Loading breed descriptions...")
+        response = requests.get(BREED_DESCRIPTIONS_URL, timeout=10)
+        response.raise_for_status()
+        from io import StringIO
+        csv_data = StringIO(response.text)
+        breed_descriptions_df = pd.read_csv(csv_data)
+        logger.info(f"Loaded breed descriptions with columns: {breed_descriptions_df.columns.tolist()}")
     except Exception as e:
-        logger.error(f"Error loading breed descriptions from database: {e}")
+        logger.warning(f"Error loading breed descriptions: {e}")
         breed_descriptions_df = pd.DataFrame()
 
 @app.on_event("startup")
@@ -155,51 +119,19 @@ async def startup_event():
     logger.info("Startup complete!")
 
 def get_breed_description(breed_name: str) -> str:
-    if breed_descriptions_df.empty:
+    if breed_descriptions_df.empty or breed_descriptions_df.shape[1] < 2:
         return "Description not available."
-    
-    # Try to find the breed in different possible column names
-    possible_breed_columns = ['breed', 'name', 'breed_name', 'Breed', 'Name']
-    possible_description_columns = ['description', 'info', 'details', 'Description', 'Info']
-    
-    breed_col = None
-    desc_cols = []
-    
-    # Find the breed column
-    for col in possible_breed_columns:
-        if col in breed_descriptions_df.columns:
-            breed_col = col
-            break
-    
-    # Find description columns
-    for col in breed_descriptions_df.columns:
-        if col != breed_col and any(desc_name.lower() in col.lower() for desc_name in possible_description_columns):
-            desc_cols.append(col)
-    
-    # If no specific description columns found, use all columns except the breed column
-    if not desc_cols and breed_col:
-        desc_cols = [col for col in breed_descriptions_df.columns if col != breed_col]
-    
-    if not breed_col:
-        # Fallback to first column as breed column
-        breed_col = breed_descriptions_df.columns[0]
-        desc_cols = breed_descriptions_df.columns[1:].tolist()
-    
-    # Search for the breed (case-insensitive)
+
+    breed_col = breed_descriptions_df.columns[0]
     row = breed_descriptions_df[
         breed_descriptions_df[breed_col].astype(str).str.strip().str.lower() == breed_name.strip().lower()
     ]
-    
-    if not row.empty and desc_cols:
-        # Combine description from multiple columns
-        descriptions = []
-        for col in desc_cols[:5]:  # Limit to first 5 description columns
-            desc_value = str(row.iloc[0][col]).strip()
-            if desc_value and desc_value.lower() not in ['nan', 'none', '']:
-                descriptions.append(desc_value)
-        
-        return '\n'.join(descriptions) if descriptions else "Description not available."
-    
+
+    if not row.empty:
+        # Ambil kolom ke 1 sampai ke 6 (maksimum)
+        max_index = min(6, breed_descriptions_df.shape[1] - 1)
+        return '\n'.join(str(row.iloc[0, i]) for i in range(1, max_index + 1))
+
     return "Description not available."
 
 @app.post("/predict")
@@ -282,46 +214,8 @@ async def health_check():
         "status": "healthy",
         "model_loaded": model is not None,
         "device": str(device),
-        "breed_descriptions_loaded": not breed_descriptions_df.empty,
-        "database_path": DATABASE_PATH,
-        "database_exists": os.path.exists(DATABASE_PATH)
+        "breed_descriptions_loaded": not breed_descriptions_df.empty
     }
-
-# New endpoint to check database structure
-@app.get("/database-info")
-async def database_info():
-    try:
-        if not os.path.exists(DATABASE_PATH):
-            return {"error": "Database file not found"}
-        
-        conn = sqlite3.connect(DATABASE_PATH)
-        
-        # Get table names
-        tables_query = "SELECT name FROM sqlite_master WHERE type='table'"
-        tables_df = pd.read_sql_query(tables_query, conn)
-        tables = tables_df['name'].tolist()
-        
-        # Get column info for each table
-        table_info = {}
-        for table in tables:
-            try:
-                columns_query = f"PRAGMA table_info({table})"
-                columns_df = pd.read_sql_query(columns_query, conn)
-                table_info[table] = columns_df.to_dict('records')
-            except Exception as e:
-                table_info[table] = f"Error: {e}"
-        
-        conn.close()
-        
-        return {
-            "database_path": DATABASE_PATH,
-            "tables": tables,
-            "table_info": table_info,
-            "breed_descriptions_loaded": not breed_descriptions_df.empty
-        }
-        
-    except Exception as e:
-        return {"error": f"Error reading database: {e}"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,4 +1,4 @@
-// Pet Breed Classifier - JavaScript Implementation with Camera Fix
+// Pet Breed Classifier - JavaScript Implementation with SQL Database Support
 class PetBreedClassifier {
     constructor() {
         // Configuration
@@ -412,79 +412,96 @@ class PetBreedClassifier {
         this.resultsGrid.innerHTML = '';
     }
     
+    // NEW: Updated method to handle SQL database format
     formatBreedInfo(data) {
-        // Define the exact order and mapping of fields
+        // Define the exact order and mapping of fields for SQL database structure
         const fieldOrder = [
-            { key: 'height', label: 'Height', icon: 'fas fa-ruler-vertical' },
-            { key: 'weight', label: 'Weight', icon: 'fas fa-weight' },
-            { key: 'lifespan', label: 'Life Expectancy', icon: 'fas fa-heart' },
-            { key: 'characteristic', label: 'Characteristic', icon: 'fas fa-smile' },
-            { key: 'trainability', label: 'Trainability', icon: 'fas fa-graduation-cap' },
-            { key: 'exercise', label: 'Exercise Needs', icon: 'fas fa-running' },
-            { key: 'grooming', label: 'Grooming', icon: 'fas fa-cut' },
-            { key: 'health', label: 'Health Considerations', icon: 'fas fa-stethoscope' },
-            { key: 'diet', label: 'Diet and Nutrition', icon: 'fas fa-utensils' }
+            { key: 'height', label: 'Height', icon: 'fas fa-ruler-vertical', type: 'gender_range' },
+            { key: 'weight', label: 'Weight', icon: 'fas fa-weight', type: 'gender_range' },
+            { key: 'lifespan', label: 'Life Expectancy', icon: 'fas fa-heart', type: 'range' },
+            { key: 'characteristics', label: 'Characteristic', icon: 'fas fa-smile', type: 'text' },
+            { key: 'exercise_needs', label: 'Exercise Needs', icon: 'fas fa-running', type: 'text' },
+            { key: 'grooming_requirements', label: 'Grooming Requirements', icon: 'fas fa-cut', type: 'text' },
+            { key: 'health_considerations', label: 'Health Considerations', icon: 'fas fa-stethoscope', type: 'text' },
+            { key: 'diet_nutrition', label: 'Diet and Nutrition', icon: 'fas fa-utensils', type: 'text' }
         ];
 
-        // Extract data from the backend response
+        // Extract data from the SQL database response
         const extractedData = {};
         
-        // If data comes as a description string, parse it
-        if (typeof data === 'string' && data !== "Description not available.") {
-            const lines = data.split('\n').filter(line => line.trim());
+        // Process SQL database format
+        if (typeof data === 'object' && data !== null) {
+            // Height formatting (Male/Female ranges)
+            if (data.height_male_min !== undefined && data.height_male_max !== undefined &&
+                data.height_female_min !== undefined && data.height_female_max !== undefined) {
+                extractedData.height = {
+                    male: this.formatRange(data.height_male_min, data.height_male_max),
+                    female: this.formatRange(data.height_female_min, data.height_female_max)
+                };
+            }
             
-            lines.forEach(line => {
-                const trimmedLine = line.trim();
-                const lowerLine = trimmedLine.toLowerCase();
-                
-                if (lowerLine.includes('height:') || lowerLine.includes('size:')) {
-                    extractedData.height = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('weight:')) {
-                    extractedData.weight = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('lifespan:') || lowerLine.includes('life span:') || lowerLine.includes('life expectancy:')) {
-                    extractedData.lifespan = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('temperament:') || lowerLine.includes('characteristic:')) {
-                    extractedData.characteristic = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('trainability:')) {
-                    extractedData.trainability = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('exercise:') || lowerLine.includes('exercise needs:')) {
-                    extractedData.exercise = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('grooming:')) {
-                    extractedData.grooming = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('health:') || lowerLine.includes('health considerations:')) {
-                    extractedData.health = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                } else if (lowerLine.includes('diet:') || lowerLine.includes('diet and nutrition:')) {
-                    extractedData.diet = trimmedLine.split(':')[1]?.trim() || trimmedLine;
-                }
-            });
-        } 
-        // If data comes as an object (direct CSV mapping)
-        else if (typeof data === 'object' && data !== null) {
-            // Map CSV column names to our keys
-            const columnMapping = {
-                'Height': 'height',
-                'Weight': 'weight', 
-                'Life Expectancy': 'lifespan',
-                'Characteristic': 'characteristic',
-                'Trainability': 'trainability',
-                'Exercise Needs': 'exercise',
-                'Grooming': 'grooming',
-                'Health Considerations': 'health',
-                'Diet and Nutrition': 'diet'
-            };
+            // Weight formatting (Male/Female ranges)
+            if (data.weight_male_min !== undefined && data.weight_male_max !== undefined &&
+                data.weight_female_min !== undefined && data.weight_female_max !== undefined) {
+                extractedData.weight = {
+                    male: this.formatRange(data.weight_male_min, data.weight_male_max),
+                    female: this.formatRange(data.weight_female_min, data.weight_female_max)
+                };
+            }
             
-            // Extract data using column mapping
-            Object.keys(columnMapping).forEach(csvColumn => {
-                const ourKey = columnMapping[csvColumn];
-                if (data[csvColumn] && data[csvColumn] !== 'Information not available') {
-                    extractedData[ourKey] = data[csvColumn];
-                }
-            });
+            // Life Expectancy formatting (single range)
+            if (data.life_expectancy_min !== undefined && data.life_expectancy_max !== undefined) {
+                extractedData.lifespan = this.formatRange(data.life_expectancy_min, data.life_expectancy_max);
+            }
+            
+            // Direct text mappings
+            extractedData.characteristics = data.characteristics || 'Information not available';
+            extractedData.exercise_needs = data.exercise_needs || 'Information not available';
+            extractedData.grooming_requirements = data.grooming_requirements || 'Information not available';
+            extractedData.health_considerations = data.health_considerations || 'Information not available';
+            extractedData.diet_nutrition = data.diet_nutrition || 'Information not available';
         }
 
         return { extractedData, fieldOrder };
     }
     
+    // NEW: Helper method to format numeric ranges
+    formatRange(min, max) {
+        if (min === null || min === undefined || max === null || max === undefined) {
+            return 'Information not available';
+        }
+        
+        if (min === max) {
+            return `${min}`;
+        }
+        
+        return `${min} - ${max}`;
+    }
+    
+    // NEW: Helper method to format gender-specific ranges
+    formatGenderRange(data) {
+        if (!data || (!data.male && !data.female)) {
+            return 'Information not available';
+        }
+        
+        const maleRange = data.male || 'Information not available';
+        const femaleRange = data.female || 'Information not available';
+        
+        return `
+            <div class="gender-range">
+                <div class="gender-item">
+                    <span class="gender-label">Male:</span>
+                    <span class="gender-value">${maleRange}</span>
+                </div>
+                <div class="gender-item">
+                    <span class="gender-label">Female:</span>
+                    <span class="gender-value">${femaleRange}</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    // UPDATED: Display results with new SQL format
     displayResults(data) {
         this.resultsSection.classList.add('active');
         
@@ -499,7 +516,7 @@ class PetBreedClassifier {
         
         // Display each prediction
         data.predictions.forEach((result, index) => {
-            const { extractedData, fieldOrder } = this.formatBreedInfo(result.description || result);
+            const { extractedData, fieldOrder } = this.formatBreedInfo(result);
             
             const resultCard = document.createElement('div');
             resultCard.className = 'result-card';
@@ -510,23 +527,51 @@ class PetBreedClassifier {
             
             fieldOrder.forEach(field => {
                 const value = extractedData[field.key];
-                const displayValue = value || 'Information not available';
+                let displayValue = 'Information not available';
+                
+                if (field.type === 'gender_range' && value) {
+                    displayValue = this.formatGenderRange(value);
+                } else if (field.type === 'range' && value) {
+                    displayValue = value;
+                } else if (field.type === 'text' && value) {
+                    displayValue = value;
+                }
                 
                 detailsHTML += `
                     <div class="breed-detail-item">
                         <i class="${field.icon}"></i>
                         <span class="breed-detail-label">${field.label}:</span>
-                        <span class="breed-detail-value">${displayValue}</span>
+                        <div class="breed-detail-value">${displayValue}</div>
                     </div>
                 `;
             });
             
             resultCard.innerHTML = `
                 <div class="result-header">
-                    <h3 class="breed-name">Breed: ${result.breed || result.Breed || 'Unknown'}</h3>
+                    <h3 class="breed-name">Breed: ${result.breed_name || result.breed || 'Unknown'}</h3>
                     <span class="confidence">${result.confidence || '0%'}</span>
                 </div>
                 <div class="breed-details">${detailsHTML}</div>
+                <style>
+                    .gender-range {
+                        margin-left: 1rem;
+                    }
+                    .gender-item {
+                        display: flex;
+                        margin: 0.25rem 0;
+                    }
+                    .gender-label {
+                        font-weight: 500;
+                        margin-right: 0.5rem;
+                        min-width: 4rem;
+                    }
+                    .gender-value {
+                        color: #6b7280;
+                    }
+                    .breed-detail-value {
+                        flex: 1;
+                    }
+                </style>
             `;
             
             this.resultsGrid.appendChild(resultCard);
