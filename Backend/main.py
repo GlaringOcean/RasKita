@@ -50,7 +50,7 @@ NUM_CLASSES = 55
 
 model = None
 class_names = [
-    'Abyssinian', 'Alaskan Malamute', 'American Bobtail', 'American Shorhair', 'American bulldog',
+    'Abyssinian', 'Alaskan Malamute', 'American Bobtail', 'American Shorthair', 'American bulldog',
     'American Pit Bull Terrier', 'Basset Hound', 'Beagle', 'Bengal', 'Birman', 'Bombay', 'Boxer',
     'British Shorthair', 'Bulldog', 'Calico', 'Chihuahua', 'Dachshund', 'Egyptian Mau',
     'English Cocker Spaniel', 'English Setter', 'German Shepherd', 'German Shorthaired Pointer',
