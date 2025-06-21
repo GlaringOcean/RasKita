@@ -1,9 +1,8 @@
 # Backend FastAPI App
 
-Proyek ini adalah backend berbasis **FastAPI** yang terletak di dalam folder `Backend/`. File utama yang dijalankan adalah `main.py`.
+This project is a FastAPI-based backend located in the `Backend/` folder. The main file to run is `main.py`.
 
-## 📁 Struktur Folder
-
+## 📁 Folder Structure
 project-root/
 ├── Backend/
 │ ├── main.py
@@ -11,10 +10,8 @@ project-root/
 │ └── ...
 
 
-## ⚙️ Persiapan & Menjalankan Server FastAPI
-
-Ikuti panduan di bawah ini melalui **terminal VS Code**:
-
+## ⚙️ Setup & Run the FastAPI Server
+Follow the instructions below in your **VS Code terminal**:
 ---
 
 # Upgrade Pip
@@ -23,12 +20,12 @@ python -m pip install --upgrade pip setuptools wheel
 # Install dependencies
 pip install -r requirements.txt
 
-# Jalankan FastAPI server
+# Run the FastAPI server
 cd Backend
-python -m  uvicorn main:app --reload
+python -m uvicorn main:app --reload
 
 ```
-### Jika ingin dijalankan di device lain:
+## 🌐 If you want to run the server on another device:
 ``` bash
-# Jalankan FastAPI di semua alamat IP (0.0.0.0)
-python -m  uvicorn main:app --host 0.0.0.0 --reload
+# Run FastAPI on all available IP addresses (0.0.0.0)
+python -m uvicorn main:app --host 0.0.0.0 --reload
