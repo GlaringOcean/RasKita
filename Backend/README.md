@@ -11,10 +11,10 @@ project-root/
 │ └── ...
 ├── ...
 ```
-
+---
 ## ⚙️ Setup & Run the FastAPI Server
 Follow the instructions below in your **VS Code terminal**:
-
+---
 ### Upgrade Pip, Setuptools  and Wheel
 ```
 python -m pip install --upgrade pip setuptools wheel
@@ -28,6 +28,7 @@ pip install -r requirements.txt
 cd Backend
 python -m uvicorn main:app --reload
 ```
+---
 
 ## 🌐 If you want to run the server on another device:
 ```
