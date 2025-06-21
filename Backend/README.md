@@ -31,6 +31,5 @@ python -m uvicorn main:app --reload
 
 ## 🌐 If you want to run the server on another device:
 ```
-# Run FastAPI on all available IP addresses (0.0.0.0)
 python -m uvicorn main:app --host 0.0.0.0 --reload
-```
+```bash
