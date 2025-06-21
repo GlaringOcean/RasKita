@@ -16,7 +16,7 @@ project-root/
 Follow the instructions below in your **VS Code terminal**:
 ---
 
-# Upgrade Pip
+# Upgrade Pip, Setuptools  and Wheel
 ```
 python -m pip install --upgrade pip setuptools wheel
 ```
