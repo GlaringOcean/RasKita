@@ -14,7 +14,6 @@ project-root/
 
 ## ⚙️ Setup & Run the FastAPI Server
 Follow the instructions below in your **VS Code terminal**:
----
 
 ### Upgrade Pip, Setuptools  and Wheel
 ```
