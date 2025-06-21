@@ -9,6 +9,9 @@ project-root/
 │ ├── main.py
 │ ├── requirements.txt
 │ └── ...
+├── Frontend/
+│ └── ...
+├── ...
 ```
 
 ## ⚙️ Setup & Run the FastAPI Server
@@ -32,4 +35,4 @@ python -m uvicorn main:app --reload
 ## 🌐 If you want to run the server on another device:
 ```
 python -m uvicorn main:app --host 0.0.0.0 --reload
-```bash
+```
